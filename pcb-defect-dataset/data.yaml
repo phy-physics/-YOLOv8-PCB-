@@ -1,0 +1,13 @@
+path: ..
+train: pcb-defect-dataset/train
+val: pcb-defect-dataset/val
+test: pcb-defect-dataset/test
+
+nc: 6
+names:
+  - mouse_bite
+  - spur
+  - missing_hole
+  - short
+  - open_circuit
+  - spurious_copper
