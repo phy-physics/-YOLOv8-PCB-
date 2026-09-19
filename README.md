@@ -4,3 +4,5 @@
 系统支持ONNX格式轻量化模型训练与导出，可完成短路、断路等PCB常见缺陷的识别训练，适配不同规格PCB检测需求，同时支持将app.py本地部署与Web端部署结合，支持边缘部署。
 
 数据集过大保存于u盘当中
+PCB_DATASET
+pcb-defect-dataset
