@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB缺陷检测智能系统 - 2026广东省大学生计算机设计大赛</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ 顶部导航栏 ============ -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <div class="logo">🔬</div>
+        <span>PCB缺陷检测智能系统</span>
+    </div>
+    <div class="navbar-status">
+        <span><span id="nav-train-status" class="status-dot online"></span> 系统就绪</span>
+        <span id="nav-time" style="font-size:12px;opacity:0.8"></span>
+    </div>
+</nav>
+
+<!-- ============ 侧边栏 ============ -->
+<aside class="sidebar">
+    <ul class="sidebar-nav">
+        <div class="sidebar-section">概览</div>
+        <li><a href="#" data-page="dashboard" class="active"><span class="icon">📊</span> 系统仪表板</a></li>
+
+        <div class="sidebar-section">AI 模型</div>
+        <li><a href="#" data-page="dataset"><span class="icon">📁</span> 数据集管理</a></li>
+        <li><a href="#" data-page="training"><span class="icon">🎯</span> 模型训练</a></li>
+        <li><a href="#" data-page="models"><span class="icon">📦</span> 模型管理</a></li>
+
+        <div class="sidebar-section">检测与诊断</div>
+        <li><a href="#" data-page="detection"><span class="icon">🔍</span> 缺陷检测</a></li>
+        <li><a href="#" data-page="diagnosis"><span class="icon">🔧</span> 故障诊断</a></li>
+
+        <div class="sidebar-section">系统</div>
+        <li><a href="#" data-page="monitor"><span class="icon">💻</span> 系统监控</a></li>
+    </ul>
+</aside>
+
+<!-- ============ 主内容区 ============ -->
+<div class="main-content">
+
+    <!-- ========== 仪表板页面 ========== -->
+    <div id="page-dashboard" class="page active">
+        <h2 style="margin-bottom:20px">📊 系统仪表板</h2>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-4" style="margin-bottom:20px">
+            <div class="stat-card">
+                <div class="stat-icon blue">🖼️</div>
+                <div class="stat-info"><h4 id="dash-total-images">0</h4><p>数据集图片总数</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">📝</div>
+                <div class="stat-info"><h4 id="dash-total-annotations">0</h4><p>标注总数</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🏷️</div>
+                <div class="stat-info"><h4 id="dash-total-classes">6</h4><p>缺陷类别数</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">🎮</div>
+                <div class="stat-info"><h4 id="dash-gpu" style="font-size:14px">检测中...</h4><p>计算设备</p></div>
+            </div>
+        </div>
+
+        <div class="grid grid-2">
+            <!-- 类别分布 -->
+            <div class="card">
+                <div class="card-header"><h3>📊 缺陷类别分布</h3></div>
+                <div class="card-body" id="class-distribution">加载中...</div>
+            </div>
+
+            <!-- 最新告警 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔔 最新告警</h3>
+                    <button class="btn btn-sm btn-outline" onclick="switchPage('diagnosis')">查看全部</button>
+                </div>
+                <div class="card-body" id="dash-alerts">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 系统信息 -->
+        <div class="card">
+            <div class="card-header"><h3>💻 系统状态</h3></div>
+            <div class="card-body" id="dash-system-brief">加载中...</div>
+        </div>
+    </div>
+
+    <!-- ========== 数据集页面 ========== -->
+    <div id="page-dataset" class="page">
+        <h2 style="margin-bottom:20px">📁 数据集管理</h2>
+
+        <!-- 数据集统计 -->
+        <div class="grid grid-3" style="margin-bottom:20px">
+            <div class="stat-card">
+                <div class="stat-icon blue">📚</div>
+                <div class="stat-info"><h4 id="ds-train-count">0</h4><p>训练集图片</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info"><h4 id="ds-val-count">0</h4><p>验证集图片</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🧪</div>
+                <div class="stat-info"><h4 id="ds-test-count">0</h4><p>测试集图片</p></div>
+            </div>
+        </div>
+
+        <!-- 类别详情 -->
+        <div class="card">
+            <div class="card-header"><h3>🏷️ 缺陷类别统计</h3></div>
+            <div class="card-body">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>类别名称</th><th>英文标识</th><th>标注数量</th><th>占比</th></tr></thead>
+                        <tbody id="ds-class-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 样本浏览 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🖼️ 样本浏览</h3>
+                <div style="display:flex;gap:8px">
+                    <select class="form-control" id="ds-filter-type" style="width:120px" onchange="loadDatasetSamples(this.value)">
+                        <option value="all">全部类型</option>
+                        <option value="mouse_bite">鼠咬痕</option>
+                        <option value="spur">毛刺</option>
+                        <option value="missing_hole">缺孔</option>
+                        <option value="short">短路</option>
+                        <option value="open_circuit">开路</option>
+                        <option value="spurious_copper">残铜</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" onclick="loadDatasetSamples(document.getElementById('ds-filter-type').value)">加载样本</button>
+                </div>
+            </div>
+            <div class="card-body" id="ds-samples">
+                <div class="empty-state">
+                    <div class="icon">🖼️</div>
+                    <h4>点击"加载样本"查看数据集图片</h4>
+                    <p>将显示带标注框的样本图片</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模型训练页面 ========== -->
+    <div id="page-training" class="page">
+        <h2 style="margin-bottom:20px">🎯 模型训练与优化</h2>
+
+        <!-- 训练状态 -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+                <h3>⚡ 训练状态</h3>
+                <span id="train-status-text" class="badge badge-info">空闲</span>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                    <span style="font-size:13px;color:#5f6368">进度:</span>
+                    <div class="progress-bar" style="flex:1"><div id="train-progress-fill" class="progress-bar-fill" style="width:0%"></div></div>
+                    <span id="train-epoch-text" style="font-size:13px;font-weight:600">0 / 0</span>
+                </div>
+                <div id="train-latest-metrics"></div>
+            </div>
+        </div>
+
+        <!-- 模型选择 -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+                <h3>🤖 模型加载方式</h3>
+                <button class="btn btn-sm btn-outline" onclick="refreshPretrainedModels()">🔄 刷新模型</button>
+            </div>
+            <div class="card-body">
+                <div class="config-panel" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                        <label>训练模式</label>
+                        <select id="train-mode-select" class="form-control" onchange="onTrainModeChange()">
+                            <option value="pretrained" selected>加载预训练模型（推荐）</option>
+                            <option value="retrain">从零开始训练新模型</option>
+                            <option value="finetune">基于预训练模型微调</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="pretrained-select-group">
+                        <label>选择预训练模型</label>
+                        <select id="pretrained-model-select" class="form-control">
+                            <option value="">正在扫描可用模型...</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="pretrained-info" class="alert alert-info" style="margin-top:12px">
+                    💡 预训练模型已在PCB缺陷数据集上训练优化，可直接用于检测。选择"微调"可基于已有模型继续训练。
+                </div>
+                <div id="current-model-info" style="margin-top:12px"></div>
+            </div>
+        </div>
+
+        <!-- 训练配置 -->
+        <div class="card" style="margin-bottom:20px" id="training-config-card">
+            <div class="card-header"><h3>⚙️ 训练配置</h3></div>
+            <div class="card-body">
+                <div class="config-panel">
+                    <div class="form-group">
+                        <label>模型大小</label>
+                        <select id="train-model-size" class="form-control">
+                            <option value="n" selected>YOLOv8n (最快)</option>
+                            <option value="s">YOLOv8s (快速)</option>
+                            <option value="m">YOLOv8m (均衡)</option>
+                            <option value="l">YOLOv8l (精确)</option>
+                            <option value="x">YOLOv8x (最精确)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>训练轮次</label>
+                        <input type="number" id="train-epochs" class="form-control" value="100" min="1" max="1000">
+                    </div>
+                    <div class="form-group">
+                        <label>批大小</label>
+                        <select id="train-batch" class="form-control">
+                            <option value="4">4</option>
+                            <option value="8">8</option>
+                            <option value="16" selected>16</option>
+                            <option value="32">32</option>
+                            <option value="64">64</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>图像大小</label>
+                        <select id="train-imgsize" class="form-control">
+                            <option value="320">320</option>
+                            <option value="416">416</option>
+                            <option value="640" selected>640</option>
+                            <option value="960">960</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学习率</label>
+                        <input type="number" id="train-lr" class="form-control" value="0.01" step="0.001" min="0.0001" max="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>优化器</label>
+                        <select id="train-optimizer" class="form-control">
+                            <option value="AdamW" selected>AdamW (推荐)</option>
+                            <option value="SGD">SGD</option>
+                            <option value="Adam">Adam</option>
+                            <option value="auto">auto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>早停轮数</label>
+                        <input type="number" id="train-patience" class="form-control" value="20" min="5" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>标签平滑</label>
+                        <input type="number" id="train-label-smoothing" class="form-control" value="0.05" step="0.01" min="0" max="0.2">
+                    </div>
+                </div>
+                <!-- 创新策略复选框 -->
+                <div style="margin-top:16px;display:flex;gap:20px;flex-wrap:wrap;padding:12px;background:#f8f9fa;border-radius:8px">
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <input type="checkbox" id="train-augment" checked>
+                        <label for="train-augment" style="margin:0;cursor:pointer;font-size:13px">🎨 PCB数据增强</label>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <input type="checkbox" id="train-cos-lr" checked>
+                        <label for="train-cos-lr" style="margin:0;cursor:pointer;font-size:13px">📐 余弦退火LR</label>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <input type="checkbox" id="train-multi-scale">
+                        <label for="train-multi-scale" style="margin:0;cursor:pointer;font-size:13px">🔬 多尺度训练</label>
+                    </div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:10px">
+                    <button id="btn-start-train" class="btn btn-success" onclick="startTraining()">▶ 开始训练</button>
+                    <button id="btn-stop-train" class="btn btn-danger" onclick="stopTraining()" disabled>⏹ 停止训练</button>
+                    <button class="btn btn-outline" onclick="loadTrainingHistory()">📋 训练历史</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 训练图表 -->
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header"><h3>📉 损失曲线</h3></div>
+                <div class="card-body"><div class="chart-container"><canvas id="chart-loss"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>📈 性能指标</h3></div>
+                <div class="card-body"><div class="chart-container"><canvas id="chart-map"></canvas></div></div>
+            </div>
+        </div>
+
+        <!-- 训练历史 -->
+        <div class="card" style="margin-top:20px">
+            <div class="card-header"><h3>📋 训练历史记录</h3></div>
+            <div class="card-body" id="training-history">
+                <div class="empty-state"><p>点击"训练历史"按钮加载</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模型管理页面 ========== -->
+    <div id="page-models" class="page">
+        <h2 style="margin-bottom:20px">📦 模型管理</h2>
+
+        <!-- 当前激活模型 -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+                <h3>🟢 当前激活模型</h3>
+            </div>
+            <div class="card-body" id="active-model-card">
+                <div class="empty-state"><div class="icon">📦</div><h4>暂无激活模型</h4><p>请先训练或加载预训练模型</p></div>
+            </div>
+        </div>
+
+        <!-- 预训练模型 -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+                <h3>⭐ 预训练模型</h3>
+                <button class="btn btn-sm btn-primary" onclick="loadPretrainedModelsList()">🔄 刷新</button>
+            </div>
+            <div class="card-body" id="pretrained-models-list">
+                <div class="empty-state"><div class="icon">⭐</div><h4>暂无预训练模型</h4><p>在训练页面执行训练后自动保存</p></div>
+            </div>
+        </div>
+
+        <!-- 创新点展示 -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header"><h3>💡 模型创新点</h3></div>
+            <div class="card-body" id="innovation-list">加载中...</div>
+        </div>
+
+        <!-- 训练产出模型 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📁 训练产出模型</h3>
+                <button class="btn btn-sm btn-outline" onclick="loadModels()">🔄 刷新</button>
+            </div>
+            <div class="card-body table-wrapper" id="models-list">
+                <div class="empty-state"><div class="icon">📦</div><h4>暂无模型</h4><p>请先训练模型</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 缺陷检测页面 ========== -->
+    <div id="page-detection" class="page">
+        <h2 style="margin-bottom:20px">🔍 PCB缺陷检测</h2>
+
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+                <h3>上传检测图片</h3>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px">检测模型</label>
+                        <select id="detect-model" class="form-control" style="width:180px">
+                            <option value="">自动选择最优模型</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px">置信度阈值</label>
+                        <input type="number" id="detect-conf" class="form-control" value="0.25" step="0.05" min="0.05" max="0.95" style="width:80px">
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px">IoU阈值</label>
+                        <input type="number" id="detect-iou" class="form-control" value="0.45" step="0.05" min="0.1" max="0.95" style="width:80px">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="upload-zone" class="upload-zone">
+                    <div class="icon">📤</div>
+                    <p><strong>点击或拖拽图片到此处上传</strong></p>
+                    <p style="font-size:12px;margin-top:4px">支持 JPG、PNG、BMP 格式</p>
+                    <input type="file" id="upload-input" accept=".jpg,.jpeg,.png,.bmp" style="display:none">
+                </div>
+            </div>
+        </div>
+
+        <div id="detection-result"></div>
+    </div>
+
+    <!-- ========== 故障诊断页面 ========== -->
+    <div id="page-diagnosis" class="page">
+        <h2 style="margin-bottom:20px">🔧 故障诊断与运维</h2>
+
+        <div class="grid grid-2" style="margin-bottom:20px">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔔 告警列表</h3>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn btn-sm btn-outline" onclick="loadAlerts()">🔄 刷新</button>
+                        <button class="btn btn-sm btn-danger" onclick="clearAlerts()">🗑️ 清除</button>
+                    </div>
+                </div>
+                <div class="card-body" id="alerts-list" style="max-height:400px;overflow-y:auto">
+                    <div class="empty-state"><div class="icon">🔔</div><h4>暂无告警</h4></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📑 诊断报告</h3>
+                    <button class="btn btn-sm btn-primary" onclick="generateReport()">生成报告</button>
+                </div>
+                <div class="card-body" id="diagnosis-report">
+                    <div class="empty-state"><div class="icon">📋</div><h4>点击"生成报告"获取系统诊断</h4></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="diagnosis-result"></div>
+
+        <!-- 缺陷知识库 -->
+        <div class="card">
+            <div class="card-header"><h3>📖 PCB缺陷知识库</h3></div>
+            <div class="card-body">
+                <div class="grid grid-2">
+                    <div class="diagnosis-card critical">
+                        <h4>🔴 短路 (Short)</h4>
+                        <p>铜箔之间出现不应有的导电连接。严重等级：高。可能导致PCB功能失效、元器件烧毁。常见原因：蚀刻不足、干膜破损、曝光偏移。</p>
+                    </div>
+                    <div class="diagnosis-card critical">
+                        <h4>🔴 开路 (Open Circuit)</h4>
+                        <p>导线/走线出现断裂。严重等级：高。导致信号中断、电路功能失效。常见原因：过蚀刻、机械损伤、铜箔附着力不足。</p>
+                    </div>
+                    <div class="diagnosis-card warning">
+                        <h4>🟡 缺孔 (Missing Hole)</h4>
+                        <p>应有的通孔/过孔缺失。严重等级：中。影响元器件安装和层间连接。常见原因：钻孔程序错误、钻头断裂、对位偏差。</p>
+                    </div>
+                    <div class="diagnosis-card warning">
+                        <h4>🟡 鼠咬痕 (Mouse Bite)</h4>
+                        <p>板边出现不规则缺口。严重等级：中。影响PCB结构完整性。常见原因：V-Cut深度不当、分板应力集中。</p>
+                    </div>
+                    <div class="diagnosis-card info">
+                        <h4>ℹ️ 毛刺 (Spur)</h4>
+                        <p>铜箔边缘出现突出物。严重等级：低。可能导致短路风险。常见原因：蚀刻参数不当、干膜曝光不均匀。</p>
+                    </div>
+                    <div class="diagnosis-card info">
+                        <h4>ℹ️ 残铜 (Spurious Copper)</h4>
+                        <p>不应有铜箔的区域残留铜。严重等级：低-中。潜在短路风险。常见原因：蚀刻不充分、蚀刻液老化。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 系统监控页面 ========== -->
+    <div id="page-monitor" class="page">
+        <h2 style="margin-bottom:20px">💻 系统监控</h2>
+
+        <div class="grid grid-4" style="margin-bottom:20px">
+            <div class="card"><div class="card-body"><div class="monitor-gauge" id="cpu-gauge">加载中...</div></div></div>
+            <div class="card"><div class="card-body"><div class="monitor-gauge" id="mem-gauge">加载中...</div></div></div>
+            <div class="card"><div class="card-body"><div class="monitor-gauge" id="disk-gauge">加载中...</div></div></div>
+            <div class="card"><div class="card-body" id="gpu-info"><div class="monitor-gauge">加载中...</div></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>📡 工业协议状态</h3></div>
+            <div class="card-body">
+                <div class="grid grid-3">
+                    <div class="stat-card">
+                        <div class="stat-icon green">🔌</div>
+                        <div class="stat-info"><h4>Modbus/TCP</h4><p>端口 502 · 就绪</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🌐</div>
+                        <div class="stat-info"><h4>OPC UA</h4><p>端口 4840 · 就绪</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⚡</div>
+                        <div class="stat-info"><h4>PROFINET</h4><p>实时协议 · 就绪</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+    // 更新时间
+    setInterval(() => {
+        const el = document.getElementById('nav-time');
+        if (el) el.textContent = new Date().toLocaleString('zh-CN');
+    }, 1000);
+</script>
+</body>
+</html>
